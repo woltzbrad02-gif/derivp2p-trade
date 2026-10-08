@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "M-pesa",
-  "tradeId": "Order ID 1066708",
-  "amount": "0.07 USD",
+  "paymentMethod": "Bank account",
+  "tradeId": "Order ID 00000",
+  "amount": "0.6 USD",
   "status": "waiting"
 }
