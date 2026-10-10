@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Trần Ngọc Thiện",
-  "tradeId": "Order ID 1095518",
-  "amount": "19.90 USD",
+  "paymentMethod": "Bank transfer",
+  "tradeId": "Order ID 1105835",
+  "amount": "5.59 USD",
   "status": "waiting"
 }
