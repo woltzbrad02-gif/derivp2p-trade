@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Mascom MyZaka",
-  "tradeId": "Order ID 1116149",
-  "amount": "5.39 USD",
+  "paymentMethod": "Safaricom m-pesa",
+  "tradeId": "Order ID",
+  "amount": "7.59 USD",
   "status": "waiting"
 }
