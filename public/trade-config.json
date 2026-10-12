@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Safaricom m-pesa",
-  "tradeId": "1116499",
-  "amount": "7.59 USD",
+  "paymentMethod": "Bank transfer",
+  "tradeId": "1116629",
+  "amount": "49.75 USD",
   "status": "waiting"
 }
