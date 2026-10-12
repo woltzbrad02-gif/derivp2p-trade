@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Bank transfer",
-  "tradeId": "Order ID 1105835",
-  "amount": "5.59 USD",
+  "paymentMethod": "Nequi",
+  "tradeId": "Order ID 1114185",
+  "amount": "12.00usd",
   "status": "waiting"
 }
