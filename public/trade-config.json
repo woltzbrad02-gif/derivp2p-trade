@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Tigo Pesa",
-  "tradeId": "1130061",
+  "paymentMethod": "Commercial Bank",
+  "tradeId": "1132420",
   "amount": "7.00 USD",
   "status": "waiting"
 }
