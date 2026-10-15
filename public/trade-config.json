@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "M-pesa",
-  "tradeId": "1126116",
-  "amount": "0.31",
+  "paymentMethod": "Tigo Pesa",
+  "tradeId": "1130061",
+  "amount": "5.00 USD",
   "status": "waiting"
 }
