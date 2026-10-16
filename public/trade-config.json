@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Commercial Bank",
-  "tradeId": "1132420",
-  "amount": "7.00 USD",
+  "paymentMethod": "Unified payment interface (upi)",
+  "tradeId": "1134180",
+  "amount": "1.00 USD",
   "status": "waiting"
 }
