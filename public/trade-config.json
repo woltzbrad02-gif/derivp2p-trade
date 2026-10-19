@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Unified payment interface (upi)",
-  "tradeId": "1134180",
-  "amount": "1.00 USD",
+  "paymentMethod": "Wave",
+  "tradeId": "1147289",
+  "amount": "5.00 USD",
   "status": "waiting"
 }
