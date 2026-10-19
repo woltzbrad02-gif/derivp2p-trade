@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Wave",
-  "tradeId": "1147289",
-  "amount": "5.00 USD",
+  "paymentMethod": "Bank transfer",
+  "tradeId": "1147525",
+  "amount": "7.42 USD",
   "status": "waiting"
 }
