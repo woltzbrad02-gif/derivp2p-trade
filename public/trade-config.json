@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "MTN Mobile Money",
-  "tradeId": "1174724",
-  "amount": "10.62",
+  "paymentMethod": "Bank transfer",
+  "tradeId": "1175524",
+  "amount": "5.00 USD",
   "status": "waiting"
 }
