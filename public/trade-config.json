@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Bank transfer",
-  "tradeId": "1181802",
-  "amount": "140.00 USD",
+  "paymentMethod": "MTN Mobile Money (MoMo)",
+  "tradeId": "1184799",
+  "amount": "5.00 USD",
   "status": "waiting"
 }
