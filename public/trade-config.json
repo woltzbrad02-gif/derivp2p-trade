@@ -1,6 +1,6 @@
 {
-  "paymentMethod": "Safaricom M-PESA",
-  "tradeId": "1194893",
-  "amount": "10.00 USD",
+  "paymentMethod": "MTN Mobile Money (MoMo)",
+  "tradeId": "1195612",
+  "amount": "60.00 USD",
   "status": "waiting"
 }
